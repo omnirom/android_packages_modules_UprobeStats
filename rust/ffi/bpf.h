@@ -14,65 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef __UPROBESTATSBPF_H__
-#define __UPROBESTATSBPF_H__
+#pragma once
 
 #include <sys/types.h>
 
 __BEGIN_DECLS
 
-struct CallTimestamp {
-  unsigned int event;
-  unsigned long timestampNs;
-};
-
-struct CallResult {
-  unsigned long pc;
-  unsigned long regs[10];
-};
-
-struct SetUidTempAllowlistStateRecord {
-  __u64 uid;
-  bool onAllowlist;
-};
-
-struct UpdateDeviceIdleTempAllowlistRecord {
-  int changing_uid;
-  bool adding;
-  long duration_ms;
-  int type;
-  int reason_code;
-  char reason[256];
-  int calling_uid;
-};
-
-#pragma pack(push, 1) // Pack structs with 1-byte boundary
-struct WmBoundUid {
-  __u64 client_uid;
-  char client_package_name[64];
-  unsigned long bind_flags;
-  bool initialized;
-};
-
-struct ComponentEnabledSetting {
-  char package_name[64];
-  char class_name[64];
-  int new_state;
-  char calling_package_name[64];
-  bool initialized;
-};
-
-struct MalwareSignal {
-  struct WmBoundUid wm_bound_uid;
-  struct ComponentEnabledSetting component_enabled_setting;
-};
-#pragma pack(pop)
+typedef struct BpfMapHandle BpfMapHandle;
 
 int pollRingBuf(const char *mapPath, int timeoutMs, size_t valueSize,
                 void (*callback)(const void *, void *), void *cookie);
 int bpfPerfEventOpen(const char *filename, int offset, int pid,
                      const char *bpfProgramPath);
 
-__END_DECLS
+int bpfMapOpenExclusiveRW(const char *path, BpfMapHandle **handle_out);
+void bpfMapClose(BpfMapHandle *handle);
+int bpfMapUpdateElem(BpfMapHandle *handle, const void *key, const void *value,
+                     uint64_t flags);
+int bpfMapLookupElem(BpfMapHandle *handle, const void *key, void *value);
+int bpfMapDeleteElem(BpfMapHandle *handle, const void *key);
+int bpfMapGetFirstKey(BpfMapHandle *handle, void *firstKey);
 
-#endif  // __UPROBESTATSBPF_H__
+__END_DECLS
